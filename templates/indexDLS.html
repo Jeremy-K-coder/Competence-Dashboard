@@ -1,0 +1,262 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Home Page
+{% endblock %}
+
+{% block main %}
+    <div class="container">
+        <h2 class="competence-list-heading">COMPETENCE LIST</h2>
+        <p></p>
+        <!-- Status Filter Dropdown -->
+         <div>
+            <label>Filter by status</label>
+        </div>
+        <div class="dropdown-container">
+            <select id="statusFilter" class="form-control custom-dropdown" onchange="filterTable()">
+                <option value="">All</option>
+                <option value="UP-TO-DATE">UP-TO-DATE</option>
+                <option value="ALMOST DUE">ALMOST DUE</option>
+                <option value="OVERDUE">OVERDUE</option>
+                <option value="Submitted for DLS approval">Submitted for DLS approval</option>
+                <option value="Submitted for ED's approval">Submitted for ED's approval</option>
+                <option value="Returned for amendment">Returned for amendment</option>
+            </select>
+        </div>
+
+        <table class="table table-striped mt-3">
+            <thead>
+                <tr>
+                    <th>Tech Name</th>
+                    <th>Competence</th>
+                    <th>Last done Date</th>
+                    <th>Final Approval Date</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="competenceTable">
+                {% for competence in competencesRecords %}
+                <tr class="competence-row" data-id="{{ competence['id'] }}">
+                    <td>{{ competence["name"] }}</td>
+                    <td>{{ competence["competence"] }}</td>
+                    <td>{{ competence["done_date"] }}</td>
+                    <td>{{ competence["final_approval_date"] }}</td>
+                    <td class="due-date-column">{{ competence["due_date"] }}</td>
+                    <td class="status-column">{{ competence["status"] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Hidden Form to Submit Competence Status -->
+    <form id="approvalForm" method="POST" action="/" style="display: none;">
+        <input type="hidden" id="competenceIdInput" name="competenceId" />
+        <input type="hidden" id="statusInput" name="status" />
+    </form>
+
+    <!-- Modal -->
+    <div id="approvalModal" class="modal" tabindex="-1" role="dialog" style="display: none;">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"> Choose the action that was performed </h5>
+                    <button type="button" class="close" onclick="closeModal()" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div>
+                            <input type="radio" id="submittedApproval" name="action" value="Submitted for ED's approval" />
+                            <label for="submittedApproval">Submitted for ED's approval</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="returnedForAmendment" name="action" value="Returned for amendment" />
+                            <label for="returnedForAmendment">Returned for amendment</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="submitApproval()">Submit</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const rows = document.querySelectorAll(".competence-row");
+
+            rows.forEach(row => {
+                const statusCell = row.querySelector(".status-column");
+                const dueDateCell = row.querySelector(".due-date-column");
+
+                // Update status background color
+                if (statusCell) {
+                    const status = statusCell.textContent.trim();
+                    switch (status) {
+                        case "UP-TO-DATE":
+                            statusCell.style.backgroundColor = "green";
+                            statusCell.style.color = "white";
+                            break;
+                        case "Submitted for DLS approval":
+                        case "Submitted for ED's approval":
+                        case "Returned for amendment":
+                            statusCell.style.backgroundColor = "orange";
+                            statusCell.style.color = "white";
+                            break;
+                        case "ALMOST DUE":
+                            statusCell.style.backgroundColor = "yellow";
+                            break;
+                        case "OVERDUE":
+                            statusCell.style.backgroundColor = "red";
+                            statusCell.style.color = "white";
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                // Update due date background color
+                if (dueDateCell) {
+                    const dueDateText = dueDateCell.textContent.trim();
+                    const dueDate = new Date(dueDateText);
+                    const today = new Date();
+                    const twoMonthsFromNow = new Date();
+                    twoMonthsFromNow.setMonth(today.getMonth() + 2);
+
+                    if (dueDate <= today) {
+                        dueDateCell.style.backgroundColor = "red";
+                        dueDateCell.style.color = "white";
+                    } else if (dueDate <= twoMonthsFromNow) {
+                        dueDateCell.style.backgroundColor = "yellow";
+                    }
+                }
+
+                // Add click functionality for specific statuses
+                if (statusCell) {
+                    const status = statusCell.textContent.trim();
+
+                    if (status === "Submitted for DLS approval") {
+                        row.style.cursor = "pointer";
+                        row.addEventListener("click", () => {
+                            const modal = document.getElementById("approvalModal");
+                            modal.style.display = "block";
+                            document.getElementById("competenceIdInput").value = row.getAttribute('data-id');
+                        });
+                    } else {
+                        row.style.cursor = "default";
+                    }
+                }
+            });
+        });
+
+        function closeModal() {
+            document.getElementById("approvalModal").style.display = "none";
+        }
+
+        function submitApproval() {
+            const competenceId = document.getElementById("competenceIdInput").value;
+            let status = "";
+  
+            const selectedAction = document.querySelector('input[name="action"]:checked');
+            if (selectedAction) {
+                status = selectedAction.value;
+            } else {
+                alert("Please select an action.");
+                return;
+            }
+
+            document.getElementById("statusInput").value = status;
+
+            const rows = document.querySelectorAll(".competence-row");
+            rows.forEach(row => {
+                const statusCell = row.querySelector(".status-column");
+                if (row.getAttribute("data-id") === competenceId) {
+                    statusCell.textContent = status;
+                    statusCell.style.backgroundColor = status === "Returned for amendment" ? "orange" : "green";
+                }
+            });
+
+            closeModal();
+            alert("Submission confirmed. Status updated.");
+            document.getElementById("approvalForm").submit();
+        }
+
+        function filterTable() {
+            const filter = document.getElementById("statusFilter").value.toLowerCase();
+            const rows = document.getElementById("competenceTable").getElementsByTagName("tr");
+
+            for (let row of rows) {
+                const statusCell = row.querySelector(".status-column");
+                if (statusCell) {
+                    const status = statusCell.textContent.trim().toLowerCase();
+                    row.style.display = filter === "" || status.includes(filter) ? "" : "none";
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .dropdown-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .custom-dropdown {
+            width: 250px;
+            text-align: center;
+            padding: 10px;
+            font-size: 16px;
+            appearance: none;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zY2hlbWVzdGVyL3htbG5zL3N2ZyIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj4KPHBhdGggZD0iTTEwMCAwIEw1MCA1MEwgMTAwIDAgWiIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjEwMCIgc3Ryb2tlLWxpbmVjYXBzZT0ibm9uZSIgLz4KPC9zdmc+Cg==');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px 16px;
+        }
+
+        .custom-dropdown:focus {
+            outline: none;
+            border-color: #5cb85c;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            width: 500px;
+            text-align: center;
+        }
+
+        .modal-header,
+        .modal-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .competence-list-heading {
+            color: black; /* Text color */
+            font-weight: bold; /* Bold text */
+            background-color: lightgray; /* Light gray background */
+            padding: 10px; /* Add padding for better spacing */
+            border-radius: 5px; /* Optional: rounded corners */
+            text-align: center; /* Optional: center the text */
+        }
+    </style>
+{% endblock %}

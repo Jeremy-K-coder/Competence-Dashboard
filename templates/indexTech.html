@@ -1,0 +1,168 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Home Page
+{% endblock %}
+
+{% block main %}
+    <div class="container">
+        <h2 class="competence-list-heading">COMPETENCE LIST</h2>
+        <p></p>
+
+        <!-- Status Filter Dropdown -->
+        <div class="filter-section">
+            <label for="statusFilter">Filter by status</label>
+            <select id="statusFilter" class="form-control custom-dropdown" onchange="filterTable()">
+                <option value="">All</option>
+                <option value="UP-TO-DATE">UP-TO-DATE</option>
+                <option value="ALMOST DUE">ALMOST DUE</option>
+                <option value="OVERDUE">OVERDUE</option>
+                <option value="Submitted for DLS approval">Submitted for DLS approval</option>
+                <option value="Submitted for ED's approval">Submitted for ED's approval</option>
+                <option value="Returned for amendment">Returned for amendment</option>
+            </select>
+        </div>
+
+        <!-- Competence Table -->
+        <table class="table table-striped mt-3">
+            <thead>
+                <tr>
+                    <th>Competence</th>
+                    <th>Last Done Date</th>
+                    <th>Final Approval Date</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="competenceTable">
+                {% for competence in competencesTech %}
+                <tr>
+                    <td>{{ competence["competence"] }}</td>
+                    <td>{{ competence["done_date"] }}</td>
+                    <td>{{ competence["final_approval_date"] }}</td>
+                    <td class="due-date-column">{{ competence["due_date"] }}</td>
+                    <td class="status-column">{{ competence["status"] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function filterTable() {
+            const filter = document.getElementById("statusFilter").value.toLowerCase();
+            const rows = document.querySelectorAll("#competenceTable tr");
+
+            rows.forEach(row => {
+                const statusCell = row.querySelector(".status-column");
+                const status = statusCell ? statusCell.textContent.toLowerCase() : "";
+
+                row.style.display = filter === "" || status.includes(filter) ? "" : "none";
+            });
+        }
+
+        function applyStyles() {
+            const rows = document.querySelectorAll("#competenceTable tr");
+            const today = new Date();
+
+            rows.forEach(row => {
+                const statusCell = row.querySelector(".status-column");
+                const dueDateCell = row.querySelector(".due-date-column");
+
+                // Apply background color for the status column
+                if (statusCell) {
+                    const status = statusCell.textContent.trim();
+
+                    if (status === "UP-TO-DATE") {
+                        statusCell.style.backgroundColor = "green";
+                        statusCell.style.color = "white";
+                    } else if (["Submitted for DLS approval", "Submitted for ED's approval", "Returned for amendment"].includes(status)) {
+                        statusCell.style.backgroundColor = "orange";
+                        statusCell.style.color = "white";
+                    } else if (status === "ALMOST DUE") {
+                        statusCell.style.backgroundColor = "yellow";
+                    } else if (status === "OVERDUE") {
+                        statusCell.style.backgroundColor = "red";
+                        statusCell.style.color = "white";
+                    }
+                }
+
+                // Apply background color for the due date column
+                if (dueDateCell) {
+                    const dueDateText = dueDateCell.textContent.trim();
+                    const dueDate = new Date(dueDateText);
+
+                    if (!isNaN(dueDate.getTime())) {
+                        const timeDiff = dueDate - today;
+                        const daysDiff = timeDiff / (1000 * 60 * 60 * 24);
+
+                        if (daysDiff <= 60 && daysDiff > 0) {
+                            dueDateCell.style.backgroundColor = "yellow";
+                        } else if (daysDiff <= 0) {
+                            dueDateCell.style.backgroundColor = "red";
+                            dueDateCell.style.color = "white";
+                        }
+                    }
+                }
+            });
+        }
+
+        // Apply styles on page load
+        document.addEventListener("DOMContentLoaded", applyStyles);
+    </script>
+
+    <style>
+        .filter-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .custom-dropdown {
+            width: 250px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            appearance: none;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zY2hlbWVzdGVyL3htbG5zL3N2ZyIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj4KPHBhdGggZD0iTTEwMCAwIEw1MCA1MEwgMTAwIDAgWiIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjEwMCIgc3Ryb2tlLWxpbmVjYXBzZT0ibm9uZSIgLz4KPC9zdmc+Cg==') no-repeat right 10px center;
+            background-size: 16px 16px;
+        }
+
+        .custom-dropdown:focus {
+            outline: none;
+            border-color: #5cb85c;
+        }
+
+        .competence-list-heading {
+            color: #000;
+            font-weight: bold;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .table {
+            width: 100%;
+            margin: auto;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            text-align: left;
+            padding: 8px;
+        }
+
+        .table th {
+            background-color: #ddd;
+            font-weight: bold;
+        }
+
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: #f9f9f9;
+        }
+    </style>
+{% endblock %}

@@ -43,3 +43,6 @@ def login_required(f):
         return f(*args, **kwargs)
 
     return decorated_function
+
+if __name__ == "__main__":
+    app.run(debug=True)

@@ -1,0 +1,299 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Home Page
+{% endblock %}
+
+{% block main %}
+    <div class="container">
+        <h2 class="competence-list-heading">COMPETENCE LIST</h2>
+        <p></p>
+        <!-- Status Filter Dropdown -->
+        <div>
+            <label>Filter by status</label>
+        </div>
+        <div class="dropdown-container">
+            <select id="statusFilter" class="form-control custom-dropdown" onchange="filterTable()">
+                <option value="">All</option>
+                <option value="UP-TO-DATE">UP-TO-DATE</option>
+                <option value="ALMOST DUE">ALMOST DUE</option>
+                <option value="OVERDUE">OVERDUE</option>
+                <option value="Submitted for DLS approval">Submitted for DLS approval</option>
+                <option value="Submitted for ED's approval">Submitted for ED's approval</option>
+                <option value="Returned for amendment">Returned for amendment</option>
+            </select>
+        </div>
+
+        <table class="table table-striped mt-3">
+            <thead>
+                <tr>
+                    <th>Tech Name</th>
+                    <th>Competence</th>
+                    <th>Last done Date</th>
+                    <th>Final Approval Date</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="competenceTable">
+                {% for competence in competencesRecords %}
+                <tr 
+                    class="competence-row {{ 'clickable-row' if competence['status'] == 'Submitted for ED\'s approval' }}" 
+                    data-id="{{ competence['id'] }}" 
+                    onclick="handleRowClick(this)"
+                >
+                    <td>{{ competence["name"] }}</td>
+                    <td>{{ competence["competence"] }}</td>
+                    <td>{{ competence["done_date"] }}</td>
+                    <td>{{ competence["final_approval_date"] }}</td>
+                    <td class="due-date-column">{{ competence["due_date"] }}</td>
+                    <td class="status-column">{{ competence["status"] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Hidden Form to Submit Competence Status -->
+    <form id="approvalForm" method="POST" action="/" style="display: none;">
+        <input type="hidden" id="competenceIdInput" name="competenceId" />
+        <input type="hidden" id="statusInput" name="status" />
+        <input id="finalApprovalDateInput" name="final_approval_date" type="hidden">
+    </form>
+
+    <!-- Modal -->
+    <div id="approvalModal" class="modal" tabindex="-1" role="dialog" style="display: none;">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"> Confirm competence approval is complete by inputting ED's approval date and checking the box below </h5>
+                    <button type="button" class="close" onclick="closeModal()" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div>
+                            ED's approval date <input id="modalfinal_approval_date" class="form-control mx-auto w-auto" name="final_approval_date" type="date">
+                        </div>
+                    </form>
+                    <p></p>
+                    <input type="checkbox" id="modalApproveCheckbox" />
+                    <label for="modalApproveCheckbox"> Update Competence Status </label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="submitApproval()">Submit</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const rows = document.querySelectorAll(".competence-row");
+
+            // Add color to Status and Due Date columns
+            rows.forEach(row => {
+                const statusCell = row.querySelector(".status-column");
+                const dueDateCell = row.querySelector(".due-date-column");
+
+                // Apply Status column background color
+                if (statusCell) {
+                    const status = statusCell.textContent.trim();
+
+                    if (status === "UP-TO-DATE") {
+                        statusCell.style.backgroundColor = "green";
+                        statusCell.style.color = "white";
+                    } else if (
+                        status === "Submitted for DLS approval" ||
+                        status === "Submitted for ED's approval" ||
+                        status === "Returned for amendment"
+                    ) {
+                        statusCell.style.backgroundColor = "orange";
+                        statusCell.style.color = "black";
+                    } else if (status === "ALMOST DUE") {
+                        statusCell.style.backgroundColor = "yellow";
+                        statusCell.style.color = "black";
+                    } else if (status === "OVERDUE") {
+                        statusCell.style.backgroundColor = "red";
+                        statusCell.style.color = "white";
+                    }
+                }
+
+                // Apply Due Date column background color
+                if (dueDateCell) {
+                    const dueDateText = dueDateCell.textContent.trim();
+                    const dueDate = new Date(dueDateText);
+                    const today = new Date();
+                    const twoMonthsAhead = new Date();
+                    twoMonthsAhead.setMonth(today.getMonth() + 2);
+
+                    if (dueDate <= today) {
+                        dueDateCell.style.backgroundColor = "red";
+                        dueDateCell.style.color = "white";
+                    } else if (dueDate <= twoMonthsAhead) {
+                        dueDateCell.style.backgroundColor = "yellow";
+                        dueDateCell.style.color = "black";
+                    }
+                }
+            });
+        });
+
+        function handleRowClick(row) {
+            const statusCell = row.querySelector(".status-column");
+            const status = statusCell.textContent.trim();
+
+            if (status === "Submitted for ED's approval") {
+                const competenceId = row.getAttribute("data-id");
+                document.getElementById("competenceIdInput").value = competenceId;
+                document.getElementById("approvalModal").style.display = "block";
+            }
+        }
+
+        function closeModal() {
+            document.getElementById("approvalModal").style.display = "none";
+        }
+
+        function submitApproval() {
+            const checkbox = document.getElementById("modalApproveCheckbox");
+            const isChecked = checkbox && checkbox.checked;
+            const dateInput = document.getElementById("modalfinal_approval_date");
+            const finalApprovalDate = dateInput.value;
+
+            if (!isChecked && !finalApprovalDate) {
+                alert("Please check the box and enter the final approval date before submitting.");
+                checkbox.focus();
+                return;
+            } else if (!isChecked) {
+                alert("Please check the box before submitting.");
+                checkbox.focus();
+                return;
+            } else if (!finalApprovalDate) {
+                alert("Please enter the final approval date before submitting.");
+                dateInput.focus();
+                return;
+            }
+
+            const form = document.getElementById("approvalForm");
+            const competenceId = document.getElementById("competenceIdInput").value;
+            const status = "UP-TO-DATE";
+
+            document.getElementById("statusInput").value = status;
+            document.getElementById("finalApprovalDateInput").value = finalApprovalDate;
+
+            const rows = document.querySelectorAll(".competence-row");
+            rows.forEach(row => {
+                const statusCell = row.querySelector(".status-column");
+                if (row.getAttribute("data-id") === competenceId) {
+                    statusCell.textContent = status;
+                }
+            });
+
+            closeModal();
+            alert("Submission confirmed. Status updated.");
+            form.submit();
+        }
+
+        function filterTable() {
+            const filter = document.getElementById("statusFilter").value.toLowerCase();
+            const rows = document.getElementById("competenceTable").getElementsByTagName("tr");
+
+            for (let row of rows) {
+                const statusCell = row.querySelector(".status-column");
+                if (statusCell) {
+                    const status = statusCell.textContent.trim().toLowerCase();
+                    row.style.display = filter === "" || status.includes(filter) ? "" : "none";
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .table {
+            width: 100%;
+            margin: auto;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            text-align: left;
+            padding: 8px;
+        }
+
+        .table th {
+            background-color: #ddd;
+            font-weight: bold;
+        }
+
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: #f9f9f9;
+        }
+
+        .dropdown-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .custom-dropdown {
+            width: 250px;
+            text-align: center;
+            padding: 10px;
+            font-size: 16px;
+            appearance: none;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zY2hlbWVzdGVyL3htbG5zL3N2ZyIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj4KPHBhdGggZD0iTTEwMCAwIEw1MCA1MEwgMTAwIDAgWiIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjEwMCIgc3Ryb2tlLWxpbmVjYXBzZT0ibm9uZSIgLz4KPC9zdmc+Cg==');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px 16px;
+        }
+
+        .custom-dropdown:focus {
+            outline: none;
+            border-color: #5cb85c;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            width: 500px;
+            text-align: center;
+        }
+
+        .modal-header,
+        .modal-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .competence-list-heading {
+            color: black;
+            font-weight: bold;
+            background-color: lightgray;
+            padding: 10px;
+        }
+
+        .clickable-row {
+            cursor: pointer;
+        }
+
+        .clickable-row:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+{% endblock %}

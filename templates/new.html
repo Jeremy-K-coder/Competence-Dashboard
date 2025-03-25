@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Log In
+{% endblock %}
+
+{% block main %}
+    <h2 class="competence-list-heading">SUBMIT NEW COMPETENCE</h2>
+    <p></p>
+    <form action="/new" method="post">
+        <div class="mb-3">
+            <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name="competence" placeholder="New Competence" type="text">
+        </div>
+        <div>
+            <select name = "competence_type" class="form-control mx-auto w-auto">
+                <option disabled selected>Select competence type</option>
+                <option>Initial</option>
+                <option>6 month</option>
+                <option>Annual</option>
+            </select>
+        </div>
+        <p></p>
+        <div class="mb-3">
+            <label for="done_date" class="form-label">Assessment Date</label>
+            <input
+                id="done_date"
+                class="form-control mx-auto w-auto"
+                name="done_date"
+                type="date">
+        </div>
+        <button class="btn btn-primary" type="submit">Submit</button>
+    </form>
+    <style>
+        .competence-list-heading {
+            color: black; /* Text color */
+            font-weight: bold; /* Bold text */
+            background-color: lightgray; /* Light gray background */
+            padding: 10px; /* Add padding for better spacing */
+            border-radius: 5px; /* Optional: rounded corners */
+            text-align: center; /* Optional: center the text */
+        }
+    </style>
+    
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Register
+{% endblock %}
+
+{% block main %}
+    <form action="/register" method="post">
+        <div class="mb-3">
+            <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name="username" placeholder="Username" type="text">
+        </div>
+        <div class="mb-3">
+            <select name = "section" class="form-control mx-auto w-auto">
+                <option disabled selected>Select Section</option>
+                <option>Biorepository</option>
+                <option>CFAR</option>
+                <option>Chemistry</option>
+                <option>Haematology</option>
+                <option>Immunology 1</option>
+                <option>Immunology 2</option>
+                <option>LDMS</option>
+                <option>LMG</option>
+                <option>Microbiology</option>
+                <option>Processing</option>
+                <option>Records</option>
+                <option>Research</option>
+                <option>TB</option>
+                <option>Virology</option>
+            </select>
+         </div>
+        <div class="mb-3">
+            <select name = "role" class="form-control mx-auto w-auto">
+                <option disabled selected>Select role</option>
+                <option>Lab Director</option>
+                <option>Lab Manager</option>
+                <option>QA/QC</option>
+                <option>Section Head</option>
+                <option>Records Officer</option>
+                <option>Lab Technologist</option>
+                <option>Admin</option>
+            </select>
+         </div>
+        <div class="mb-3">
+            <input class="form-control mx-auto w-auto" name="password" placeholder="Password" type="password">
+        </div>
+        <div class="mb-3">
+            <input class="form-control mx-auto w-auto" name="confirmation" placeholder="Confirm Password" type="password">
+        </div>
+        <button class="btn btn-primary" type="submit">Register</button>
+    </form>
+{% endblock %}
