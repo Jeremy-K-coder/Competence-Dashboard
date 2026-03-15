@@ -4,10 +4,14 @@ from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
-from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
+from datetime import datetime
 
-from helpers import apology, login_required
+from helpers import apology, login_required, calculate_due_date_and_status
+
+# Role constants
+ROLE_TECH = "Lab Technologist"
+ROLE_RECORDS = "Records Officer"
+ROLE_DIRECTOR = "Lab Director"
 
 # Configure application
 app = Flask(__name__)
@@ -31,102 +35,151 @@ def after_request(response):
     return response
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
 @login_required
 def index():
-    """Show portfolio of competences"""
+    """Redirect user to role-specific dashboard."""
     user_id = session["user_id"]
-    role = db.execute("SELECT role FROM users WHERE id = ?", user_id)
-    
+
+    # Fetch role once from database
+    rows = db.execute("SELECT Role FROM users WHERE id = ?", user_id)
+    if not rows:
+        # Fallback if user is missing (should not normally happen)
+        return apology("User not found", 400)
+
+    role = rows[0]["Role"]
+
+    if role == ROLE_TECH:
+        return redirect("/dashboard/tech")
+    elif role == ROLE_RECORDS:
+        return redirect("/dashboard/records")
+    elif role == ROLE_DIRECTOR:
+        return redirect("/dashboard/director")
+    else:
+        return redirect("/dashboard/other")
+
+
+@app.route("/dashboard/tech", methods=["GET"])
+@login_required
+def dashboard_tech():
+    """Dashboard for Lab Technologists: show own competences."""
+    user_id = session["user_id"]
+    competencesTech = db.execute(
+        "SELECT competences.id AS id, competence, done_date, final_approval_date, due_date, status FROM competences WHERE user_id = ?",
+        user_id,
+    )
+    return render_template("indexTech.html", competencesTech=competencesTech)
+
+
+@app.route("/dashboard/records", methods=["GET", "POST"])
+@login_required
+def dashboard_records():
+    """
+    Dashboard for Records Officers (and similar roles):
+    - GET: show all competences.
+    - POST: handle final approval date and due date/status calculations.
+    """
+    if request.method == "POST":
+        competence_id = request.form.get("competenceId")
+        final_approval_date_str = request.form.get("final_approval_date")
+
+        if not competence_id or not final_approval_date_str:
+            return apology("Missing competence or final approval date", 400)
+
+        # Look up competence type
+        competence_type_rows = db.execute(
+            "SELECT Type FROM competences WHERE id = ?", competence_id
+        )
+        if not competence_type_rows:
+            return apology("Competence not found", 400)
+
+        competence_type = competence_type_rows[0]["Type"]
+
+        (
+            final_approval_date_obj,
+            new_due_date_obj,
+            updated_status,
+        ) = calculate_due_date_and_status(final_approval_date_str, competence_type)
+
+        db.execute(
+            "UPDATE competences SET final_approval_date = ?, due_date = ?, status = ? WHERE id = ?",
+            final_approval_date_obj.strftime("%d-%b-%Y"),
+            new_due_date_obj.strftime("%d-%b-%Y"),
+            updated_status,
+            competence_id,
+        )
+
+        competencesRecords = db.execute(
+            "SELECT username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
+        )
+        return render_template(
+            "indexRecords.html", competencesRecords=competencesRecords
+        )
+
+    # GET: show all competences
+    competencesRecords = db.execute(
+        "SELECT competences.id, username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
+    )
+    return render_template("indexRecords.html", competencesRecords=competencesRecords)
+
+
+@app.route("/dashboard/director", methods=["GET", "POST"])
+@login_required
+def dashboard_director():
+    """
+    Dashboard for Lab Director:
+    - GET: show all competences with director view.
+    - POST: handle status updates and transitions specific to Lab Director.
+    """
+    # Ensure only director can access this route (defense in depth)
+    if session.get("role") != ROLE_DIRECTOR:
+        return redirect("/")
+
     if request.method == "POST":
         updated_status = request.form.get("status")
         competence_id = request.form.get("competenceId")
 
+        if not competence_id or not updated_status:
+            return apology("Missing competence or status", 400)
 
-        if session["role"] == "Lab Director":
-            if updated_status == "Submitted for ED's approval":
-                db.execute(
-                    "UPDATE competences SET status = ? WHERE id = ?", updated_status, competence_id
-                )
-                competencesRecords = db.execute(
-                    "SELECT competences.id, username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
-                )
-                return render_template("indexDLS.html", competencesRecords=competencesRecords)
-            else:
-                done_date = "Pending"
-                final_approval_date = "Pending"
-                
-                db.execute(
-                    "UPDATE competences SET done_date = ?, final_approval_date = ?, status = ? WHERE id = ?", done_date, final_approval_date, updated_status, competence_id
-                )
-                competencesRecords = db.execute(
-                    "SELECT competences.id, username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
-                )
-                return render_template("indexDLS.html", competencesRecords=competencesRecords)
+        if updated_status == "Submitted for ED's approval":
+            db.execute(
+                "UPDATE competences SET status = ? WHERE id = ?",
+                updated_status,
+                competence_id,
+            )
         else:
-            final_approval_date = request.form.get("final_approval_date")
+            done_date = "Pending"
+            final_approval_date = "Pending"
 
-
-            # Convert final_approval_date string to a datetime object
-            final_approval_date_obj = datetime.strptime(final_approval_date, "%Y-%m-%d")
-
-            # Compute due_date from final_approval_date depending on competence type
-            competence_type = db.execute("SELECT Type from competences WHERE id = ?",
-                                         competence_id
-                                    )
-            
-            # Determine new due date
-            if competence_type[0]["Type"] == "Initial":
-                # Add 6 months
-                new_due_date_obj = final_approval_date_obj + relativedelta(months=6)
-            elif competence_type[0]["Type"] == "6 month":
-                # Add 6 months
-                new_due_date_obj = final_approval_date_obj + relativedelta(months=6)
-            else:  # Assume "Annual"
-                # Add 1 year
-                new_due_date_obj = final_approval_date_obj + relativedelta(years=1)
-
-            # Compute the status based on the new_due_date
-            today = datetime.today()
-            two_months_before = new_due_date_obj - timedelta(days=60)
-
-            if new_due_date_obj <= today:
-                updated_status = "OVERDUE"
-            elif two_months_before <= today:
-                updated_status = "ALMOST DUE"
-            else:
-                updated_status = "UP-TO-DATE"
-
-
-            db.execute("UPDATE competences SET final_approval_date = ?, due_date = ?, status = ? WHERE id = ?",
-                   final_approval_date_obj.strftime("%d-%b-%Y"), new_due_date_obj.strftime("%d-%b-%Y"), updated_status, competence_id
-                )
-            
-            competencesRecords1 = db.execute(
-                "SELECT username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
+            db.execute(
+                "UPDATE competences SET done_date = ?, final_approval_date = ?, status = ? WHERE id = ?",
+                done_date,
+                final_approval_date,
+                updated_status,
+                competence_id,
             )
-            return render_template("indexRecords.html", competencesRecords=competencesRecords1)
 
-    else:
-        if role[0]["Role"] == "Lab Technologist":
-            competencesTech = db.execute(
-                "SELECT competences.id AS id, competence, done_date, final_approval_date, due_date, status FROM competences WHERE user_id = ?", user_id
-            )
-            return render_template("indexTech.html", competencesTech=competencesTech)
-        elif role[0]["Role"] == "Records Officer":
-            competencesRecords2 = db.execute(
-                "SELECT competences.id, username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
-            )
-            return render_template("indexRecords.html", competencesRecords=competencesRecords2)
-        elif role[0]["Role"] == "Lab Director":
-            competencesRecords3 = db.execute(
-                "SELECT competences.id, username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
-            )
-            return render_template("indexDLS.html", competencesRecords=competencesRecords3)
-    competencesRecords4 = db.execute(
+        competencesRecords = db.execute(
+            "SELECT competences.id, username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
+        )
+        return render_template("indexDLS.html", competencesRecords=competencesRecords)
+
+    # GET: show all competences
+    competencesRecords = db.execute(
         "SELECT competences.id, username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
     )
-    return render_template("indexOther.html", competencesRecords=competencesRecords4)
+    return render_template("indexDLS.html", competencesRecords=competencesRecords)
+
+
+@app.route("/dashboard/other", methods=["GET"])
+@login_required
+def dashboard_other():
+    """Fallback dashboard for any other roles."""
+    competencesRecords = db.execute(
+        "SELECT competences.id, username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
+    )
+    return render_template("indexOther.html", competencesRecords=competencesRecords)
 
 
 
