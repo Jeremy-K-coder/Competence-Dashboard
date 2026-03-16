@@ -1,26 +1,99 @@
-/* Size for brand */
-nav .navbar-brand
-{
-    font-size: xx-large;
+/* ===== Layout & brand ===== */
+nav .navbar-brand {
+    font-size: 1.25rem;
 }
 
-/* Colors for brand */
-nav .navbar-brand .blue
-{
-    color: #537fbe;
+/* ===== Forms ===== */
+.form-control:not(.form-select) {
+    text-align: left;
 }
-nav .navbar-brand .red
-{
-    color: #ea433b;
+
+.form-floating .form-control {
+    text-align: left;
 }
-nav .navbar-brand .yellow
-{
-    color: #f5b82e;
+
+/* ===== Cards ===== */
+.card-form {
+    max-width: 420px;
+    margin: 0 auto;
 }
-nav .navbar-brand .green
-{
-    color: #2e944b;
-}
-.form-control {
+
+/* ===== Competence list ===== */
+.competence-list-heading {
+    color: #000;
+    font-weight: bold;
+    background-color: #f0f0f0;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
     text-align: center;
+    margin-bottom: 1rem;
+}
+
+/* ===== Filter / dropdown ===== */
+.filter-section,
+.dropdown-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.filter-section label,
+.dropdown-container label {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.custom-dropdown {
+    width: 100%;
+    max-width: 280px;
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    font-size: 1rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    appearance: none;
+    background-color: #fff;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 16px 12px;
+}
+
+.custom-dropdown:focus {
+    outline: 0;
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* ===== Tables ===== */
+.table-responsive {
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.table thead th {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Status pills (badges) — use Bootstrap classes in HTML; these are fallbacks for due-date column */
+.due-date-column.due-overdue {
+    font-weight: 600;
+}
+
+.due-date-column.due-soon {
+    font-weight: 500;
+}
+
+/* ===== Modals (custom overrides if needed) ===== */
+.modal-content {
+    border-radius: 0.5rem;
+}
+
+.clickable-row {
+    cursor: pointer;
+}
+
+.clickable-row:hover {
+    background-color: rgba(13, 110, 253, 0.05);
 }

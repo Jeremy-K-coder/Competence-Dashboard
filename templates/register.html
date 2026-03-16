@@ -1,51 +1,59 @@
 {% extends "layout.html" %}
 
-{% block title %}
-    Register
-{% endblock %}
+{% block title %}Register{% endblock %}
 
 {% block main %}
-    <form action="/register" method="post">
-        <div class="mb-3">
-            <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name="username" placeholder="Username" type="text">
-        </div>
-        <div class="mb-3">
-            <select name = "section" class="form-control mx-auto w-auto">
-                <option disabled selected>Select Section</option>
-                <option>Biorepository</option>
-                <option>CFAR</option>
-                <option>Chemistry</option>
-                <option>Haematology</option>
-                <option>Immunology 1</option>
-                <option>Immunology 2</option>
-                <option>LDMS</option>
-                <option>LMG</option>
-                <option>Microbiology</option>
-                <option>Processing</option>
-                <option>Records</option>
-                <option>Research</option>
-                <option>TB</option>
-                <option>Virology</option>
-            </select>
-         </div>
-        <div class="mb-3">
-            <select name = "role" class="form-control mx-auto w-auto">
-                <option disabled selected>Select role</option>
-                <option>Lab Director</option>
-                <option>Lab Manager</option>
-                <option>QA/QC</option>
-                <option>Section Head</option>
-                <option>Records Officer</option>
-                <option>Lab Technologist</option>
-                <option>Admin</option>
-            </select>
-         </div>
-        <div class="mb-3">
-            <input class="form-control mx-auto w-auto" name="password" placeholder="Password" type="password">
-        </div>
-        <div class="mb-3">
-            <input class="form-control mx-auto w-auto" name="confirmation" placeholder="Confirm Password" type="password">
-        </div>
-        <button class="btn btn-primary" type="submit">Register</button>
-    </form>
+<div class="card card-form shadow-sm">
+    <div class="card-body p-4">
+        <h5 class="card-title text-center mb-4">Register</h5>
+        <form action="/register" method="post">
+            <div class="form-floating mb-3">
+                <input type="text" class="form-control" id="username" name="username" placeholder="Username" autocomplete="username" autofocus>
+                <label for="username">Username</label>
+            </div>
+            <div class="mb-3">
+                <label for="section" class="form-label">Section</label>
+                <select class="form-select" id="section" name="section">
+                    <option value="" disabled selected>Select section</option>
+                    <option>Biorepository</option>
+                    <option>CFAR</option>
+                    <option>Chemistry</option>
+                    <option>Haematology</option>
+                    <option>Immunology 1</option>
+                    <option>Immunology 2</option>
+                    <option>LDMS</option>
+                    <option>LMG</option>
+                    <option>Microbiology</option>
+                    <option>Processing</option>
+                    <option>Records</option>
+                    <option>Research</option>
+                    <option>TB</option>
+                    <option>Virology</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="role" class="form-label">Role</label>
+                <select class="form-select" id="role" name="role" required>
+                    <option value="" disabled selected>Select role</option>
+                    <option>Lab Director</option>
+                    <option>Lab Manager</option>
+                    <option>QA/QC</option>
+                    <option>Section Head</option>
+                    <option>Records Officer</option>
+                    <option>Lab Technologist</option>
+                    <option>Admin</option>
+                </select>
+            </div>
+            <div class="form-floating mb-3">
+                <input type="password" class="form-control" id="password" name="password" placeholder="Password">
+                <label for="password">Password</label>
+            </div>
+            <div class="form-floating mb-4">
+                <input type="password" class="form-control" id="confirmation" name="confirmation" placeholder="Confirm password">
+                <label for="confirmation">Confirm password</label>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Register</button>
+        </form>
+    </div>
+</div>
 {% endblock %}

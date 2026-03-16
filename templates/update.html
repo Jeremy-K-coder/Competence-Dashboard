@@ -1,47 +1,38 @@
 {% extends "layout.html" %}
 
-{% block title %}
-    Update
-{% endblock %}
+{% block title %}Update Competence{% endblock %}
 
 {% block main %}
-    <h2 class="competence-list-heading">UPDATE EXISTING COMPETENCE</h2>
-    <p></p>
-    <form action="/update" method="post">
-        <div class="mb-3">
-           <select name = "competence" class="form-control mx-auto w-auto">
-                <option disabled selected>Select competence to update</option>
-                {% for competence in competences %}
-                    {% if competence["status"] == "ALMOST DUE" or competence["status"] == "OVERDUE" or competence["status"] == "Returned for amendment" %}
-                        <option>{{ competence["competence"] }}</option>
-                    {% endif %}
-                {% endfor %}
-           </select>
-        </div>
-        <div>
-            <select name = "competence_type" class="form-control mx-auto w-auto">
-                <option disabled selected>Select competence type</option>
-                <option>Initial</option>
-                <option>6 month</option>
-                <option>Annual</option>
-           </select>
-        </div>
-        <p></p>
-        <div class="mb-3">
-            <label for="done_date" class="form-label">Assessment Date</label>
-            <input id="done_date" class="form-control mx-auto w-auto" name="done_date" type="date">
-        </div>
-        <button class="btn btn-primary" type="submit">Update</button>
-    </form>
-    <style>
-        .competence-list-heading {
-            color: black; /* Text color */
-            font-weight: bold; /* Bold text */
-            background-color: lightgray; /* Light gray background */
-            padding: 10px; /* Add padding for better spacing */
-            border-radius: 5px; /* Optional: rounded corners */
-            text-align: center; /* Optional: center the text */
-        }
-    </style>
-    
+<div class="card card-form shadow-sm">
+    <div class="card-body p-4">
+        <h5 class="card-title text-center mb-4">Update Existing Competence</h5>
+        <form action="/update" method="post">
+            <div class="mb-3">
+                <label for="competence" class="form-label">Competence to update</label>
+                <select class="form-select" id="competence" name="competence" required>
+                    <option value="" disabled selected>Select competence</option>
+                    {% for competence in competences %}
+                        {% if competence["status"] == "ALMOST DUE" or competence["status"] == "OVERDUE" or competence["status"] == "Returned for amendment" %}
+                            <option>{{ competence["competence"] }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="competence_type" class="form-label">Competence type</label>
+                <select class="form-select" id="competence_type" name="competence_type" required>
+                    <option value="" disabled selected>Select type</option>
+                    <option>Initial</option>
+                    <option>6 month</option>
+                    <option>Annual</option>
+                </select>
+            </div>
+            <div class="form-floating mb-4">
+                <input type="date" class="form-control" id="done_date" name="done_date" placeholder="Assessment date" required>
+                <label for="done_date">Assessment date</label>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Update</button>
+        </form>
+    </div>
+</div>
 {% endblock %}
