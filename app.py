@@ -139,6 +139,7 @@ def dashboard_director():
         updated_status = request.form.get("status")
         competence_id = request.form.get("competenceId")
 
+        # Only `competenceId` and `status` are required for director updates
         if not competence_id or not updated_status:
             return apology("Missing competence or status", 400)
 
@@ -160,10 +161,8 @@ def dashboard_director():
                 competence_id,
             )
 
-        competencesRecords = db.execute(
-            "SELECT competences.id, username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
-        )
-        return render_template("indexDLS.html", competencesRecords=competencesRecords)
+        # Redirect so the browser performs a fresh GET and the change sticks
+        return redirect("/dashboard/director")
 
     # GET: show all competences
     competencesRecords = db.execute(

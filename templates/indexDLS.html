@@ -51,7 +51,7 @@
     </div>
 
     <!-- Hidden Form to Submit Competence Status -->
-    <form id="approvalForm" method="POST" action="/" style="display: none;">
+    <form id="approvalForm" method="POST" action="/dashboard/records" style="display: none;">
         <input type="hidden" id="competenceIdInput" name="competenceId" />
         <input type="hidden" id="statusInput" name="status" />
     </form>
@@ -177,7 +177,19 @@
                 const statusCell = row.querySelector(".status-column");
                 if (row.getAttribute("data-id") === competenceId) {
                     statusCell.textContent = status;
-                    statusCell.style.backgroundColor = status === "Returned for amendment" ? "orange" : "green";
+
+                    // Ensure warning statuses stay orange, not green
+                    if (
+                        status === "Submitted for ED's approval" ||
+                        status === "Returned for amendment" ||
+                        status === "Submitted for DLS approval"
+                    ) {
+                        statusCell.style.backgroundColor = "orange";
+                        statusCell.style.color = "white";
+                    } else if (status === "UP-TO-DATE") {
+                        statusCell.style.backgroundColor = "green";
+                        statusCell.style.color = "white";
+                    }
                 }
             });
 
