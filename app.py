@@ -4,7 +4,7 @@ from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
-from datetime import datetime
+from datetime import datetime, date
 
 from helpers import apology, login_required, calculate_due_date_and_status
 
@@ -26,6 +26,83 @@ Session(app)
 db = SQL("sqlite:///competence.db")
 
 
+def update_overdue_statuses():
+    """
+    Monitor approved competences and update status based on due_date.
+
+    Lock rule: rows in pending approval statuses are ignored by only targeting
+    rows currently marked UP-TO-DATE / ALMOST DUE (and compatible variants).
+
+    Note: due_date is stored as a string like "18-Mar-2026" (or "Pending"),
+    so we parse in Python and then issue targeted SQL UPDATEs only for rows
+    that actually need a status change.
+    """
+
+    today = date.today()
+
+    monitored_statuses = ("UP-TO-DATE", "ALMOST DUE", "Up-to-Date", "Almost Due")
+    rows = db.execute(
+        f"SELECT id, due_date, status FROM competences WHERE status IN ({','.join(['?'] * len(monitored_statuses))})",
+        *monitored_statuses,
+    )
+
+    overdue_ids = []
+    almost_due_ids = []
+    back_to_uptodate_ids = []
+
+    for row in rows:
+        due_date_str = row.get("due_date")
+        if not due_date_str or due_date_str == "Pending":
+            continue
+
+        try:
+            due = datetime.strptime(due_date_str, "%d-%b-%Y").date()
+        except (ValueError, TypeError):
+            # Skip rows with unexpected due_date formats
+            continue
+
+        days_until_due = (due - today).days
+
+        if days_until_due <= 0:
+            if row["status"] != "OVERDUE":
+                overdue_ids.append(row["id"])
+        elif days_until_due <= 30:
+            if row["status"] != "ALMOST DUE":
+                almost_due_ids.append(row["id"])
+        else:
+            # Only flip back when the row is currently ALMOST DUE
+            if row["status"] in ("ALMOST DUE", "Almost Due"):
+                back_to_uptodate_ids.append(row["id"])
+
+    # Perform targeted updates only when needed (keeps it performant)
+    updatable_current_statuses = ("UP-TO-DATE", "ALMOST DUE", "Up-to-Date", "Almost Due")
+    updatable_placeholders = ",".join(["?"] * len(updatable_current_statuses))
+
+    if overdue_ids:
+        placeholders = ",".join(["?"] * len(overdue_ids))
+        db.execute(
+            f"UPDATE competences SET status = 'OVERDUE' WHERE id IN ({placeholders}) AND status IN ({updatable_placeholders})",
+            *overdue_ids,
+            *updatable_current_statuses,
+        )
+
+    if almost_due_ids:
+        placeholders = ",".join(["?"] * len(almost_due_ids))
+        db.execute(
+            f"UPDATE competences SET status = 'ALMOST DUE' WHERE id IN ({placeholders}) AND status IN ({updatable_placeholders})",
+            *almost_due_ids,
+            *updatable_current_statuses,
+        )
+
+    if back_to_uptodate_ids:
+        placeholders = ",".join(["?"] * len(back_to_uptodate_ids))
+        db.execute(
+            f"UPDATE competences SET status = 'UP-TO-DATE' WHERE id IN ({placeholders}) AND status IN ({updatable_placeholders})",
+            *back_to_uptodate_ids,
+            *updatable_current_statuses,
+        )
+
+
 @app.after_request
 def after_request(response):
     """Ensure responses aren't cached"""
@@ -40,6 +117,9 @@ def after_request(response):
 def index():
     """Redirect user to role-specific dashboard."""
     user_id = session["user_id"]
+
+    # Automated monitoring: ensure due-date driven statuses are up to date
+    update_overdue_statuses()
 
     # Fetch role once from database
     rows = db.execute("SELECT Role FROM users WHERE id = ?", user_id)
@@ -98,8 +178,12 @@ def dashboard_records():
         (
             final_approval_date_obj,
             new_due_date_obj,
-            updated_status,
+            _computed_status,
         ) = calculate_due_date_and_status(final_approval_date_str, competence_type)
+
+        # Per lifecycle: once fully approved, start as UP-TO-DATE and let the
+        # date-monitoring logic transition it to ALMOST DUE / OVERDUE over time.
+        updated_status = "UP-TO-DATE"
 
         db.execute(
             "UPDATE competences SET final_approval_date = ?, due_date = ?, status = ? WHERE id = ?",
