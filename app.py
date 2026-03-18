@@ -36,7 +36,28 @@ def after_request(response):
 def index():
     """Show portfolio of competences"""
     user_id = session["user_id"]
-    role = db.execute("SELECT role FROM users WHERE id = ?", user_id)
+    # Prefer session data to avoid querying on every request
+    role = session.get("role")
+    department = session.get("department")
+    username = session.get("username")
+
+    # Safety/fallback: if session is missing expected fields, fetch once
+    if not role or username is None or department is None:
+        user_rows = db.execute(
+            "SELECT username, Role, Department FROM users WHERE id = ?", user_id
+        )
+        if not user_rows or len(user_rows) == 0:
+            return apology("User not found", 400)
+        if "Role" not in user_rows[0]:
+            return apology("User role missing", 400)
+
+        username = user_rows[0].get("username")
+        role = user_rows[0].get("Role")
+        department = user_rows[0].get("Department")
+
+        session["username"] = username
+        session["role"] = role
+        session["department"] = department
     
     if request.method == "POST":
         updated_status = request.form.get("status")
@@ -108,17 +129,17 @@ def index():
             return render_template("indexRecords.html", competencesRecords=competencesRecords1)
 
     else:
-        if role[0]["Role"] == "Lab Technologist":
+        if role == "Lab Technologist":
             competencesTech = db.execute(
                 "SELECT competences.id AS id, competence, done_date, final_approval_date, due_date, status FROM competences WHERE user_id = ?", user_id
             )
             return render_template("indexTech.html", competencesTech=competencesTech)
-        elif role[0]["Role"] == "Records Officer":
+        elif role == "Records Officer":
             competencesRecords2 = db.execute(
                 "SELECT competences.id, username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
             )
             return render_template("indexRecords.html", competencesRecords=competencesRecords2)
-        elif role[0]["Role"] == "Lab Director":
+        elif role == "Lab Director":
             competencesRecords3 = db.execute(
                 "SELECT competences.id, username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
             )
@@ -150,6 +171,9 @@ def login():
         rows = db.execute(
             "SELECT * FROM users WHERE username = ?", request.form.get("username")
         )
+
+        if not rows or len(rows) != 1:
+            return apology("invalid username and/or password", 403)
         
         # Ensure the correct role has been input
         if request.form.get("role") != rows[0]["Role"]:
@@ -166,6 +190,8 @@ def login():
 
         # Save role in session
         session["role"] = rows[0]["Role"]
+        session["username"] = rows[0]["username"]
+        session["department"] = rows[0].get("Department")
 
 
 
@@ -211,7 +237,14 @@ def register():
         hash = generate_password_hash(password)
 
         try:
-            db.execute("INSERT INTO users (username, hash, role, Department) VALUES (?, ?, ?, ?)", username, hash, role, section)
+            # Use schema's column name `Role` (capital R)
+            db.execute(
+                "INSERT INTO users (username, hash, Role, Department) VALUES (?, ?, ?, ?)",
+                username,
+                hash,
+                role,
+                section,
+            )
             return redirect("/")
         except:
             return apology("Username has already been registered!")
