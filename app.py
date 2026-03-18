@@ -194,7 +194,8 @@ def dashboard_records():
         )
 
         competencesRecords = db.execute(
-            "SELECT username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
+            "SELECT competences.id, username AS name, users.Department AS department, competence, done_date, final_approval_date, due_date, status "
+            "FROM competences INNER JOIN users ON user_id = users.id"
         )
         return render_template(
             "indexRecords.html", competencesRecords=competencesRecords
@@ -202,7 +203,8 @@ def dashboard_records():
 
     # GET: show all competences
     competencesRecords = db.execute(
-        "SELECT competences.id, username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
+        "SELECT competences.id, username AS name, users.Department AS department, competence, done_date, final_approval_date, due_date, status "
+        "FROM competences INNER JOIN users ON user_id = users.id"
     )
     return render_template("indexRecords.html", competencesRecords=competencesRecords)
 
@@ -250,7 +252,8 @@ def dashboard_director():
 
     # GET: show all competences
     competencesRecords = db.execute(
-        "SELECT competences.id, username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
+        "SELECT competences.id, username AS name, users.Department AS department, competence, done_date, final_approval_date, due_date, status "
+        "FROM competences INNER JOIN users ON user_id = users.id"
     )
     return render_template("indexDLS.html", competencesRecords=competencesRecords)
 
@@ -260,7 +263,8 @@ def dashboard_director():
 def dashboard_other():
     """Fallback dashboard for any other roles."""
     competencesRecords = db.execute(
-        "SELECT competences.id, username AS name, competence, done_date, final_approval_date, due_date, status FROM competences INNER JOIN users ON user_id = users.id"
+        "SELECT competences.id, username AS name, users.Department AS department, competence, done_date, final_approval_date, due_date, status "
+        "FROM competences INNER JOIN users ON user_id = users.id"
     )
     return render_template("indexOther.html", competencesRecords=competencesRecords)
 
@@ -302,6 +306,10 @@ def login():
 
         # Save role in session
         session["role"] = rows[0]["Role"]
+
+        # Save display fields in session for navbar/UI
+        session["username"] = rows[0]["username"]
+        session["department"] = rows[0].get("Department")
 
 
 
