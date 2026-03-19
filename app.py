@@ -269,7 +269,7 @@ def login():
         session["user_id"] = rows[0]["id"]
         session["Role"] = rows[0].get("Role")
         session["username"] = rows[0].get("username")
-        session["department"] = rows[0].get("Department")
+        session["Department"] = rows[0].get("Department")
 
         return redirect("/")
 
