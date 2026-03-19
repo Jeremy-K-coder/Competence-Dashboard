@@ -24,6 +24,7 @@
             <thead class="table-light">
                 <tr>
                     <th>Tech Name</th>
+                    <th>Department</th>
                     <th>Competence</th>
                     <th>Last Done Date</th>
                     <th>Final Approval Date</th>
@@ -35,6 +36,7 @@
                 {% for competence in competencesRecords %}
                 <tr>
                     <td>{{ competence["name"] }}</td>
+                    <td>{{ competence["department"] }}</td>
                     <td>{{ competence["competence"] }}</td>
                     <td>{{ competence["done_date"] }}</td>
                     <td>{{ competence["final_approval_date"] }}</td>

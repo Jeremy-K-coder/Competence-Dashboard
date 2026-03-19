@@ -24,22 +24,34 @@
             <thead class="table-light">
                 <tr>
                     <th>Tech Name</th>
+                    <th>Department</th>
                     <th>Competence</th>
                     <th>Last Done Date</th>
                     <th>Final Approval Date</th>
                     <th>Due Date</th>
                     <th>Status</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="competenceTable">
                 {% for competence in competencesRecords %}
-                <tr class="competence-row {{ 'clickable-row' if competence['status'] == \"Submitted for ED's approval\" }}"
-                    data-id="{{ competence['id'] }}"
-                    onclick="handleRowClick(this)">
+                <tr class="competence-row" data-id="{{ competence['id'] }}">
                     <td>{{ competence["name"] }}</td>
+                    <td>{{ competence.get("department", "") }}</td>
                     <td>{{ competence["competence"] }}</td>
                     <td>{{ competence["done_date"] }}</td>
-                    <td>{{ competence["final_approval_date"] }}</td>
+                    <td>
+                        {% if competence["status"] == "Submitted for ED's approval" %}
+                            <input
+                                class="form-control form-control-sm final-approval-date"
+                                type="date"
+                                name="final_approval_date"
+                                aria-label="Final approval date"
+                            >
+                        {% else %}
+                            {{ competence["final_approval_date"] }}
+                        {% endif %}
+                    </td>
                     <td class="due-date-column">{{ competence["due_date"] }}</td>
                     <td>
                         {% if competence["status"] == "UP-TO-DATE" %}
@@ -52,6 +64,17 @@
                             <span class="badge rounded-pill bg-secondary">{{ competence["status"] }}</span>
                         {% endif %}
                     </td>
+                    <td>
+                        {% if competence["status"] == "Submitted for ED's approval" %}
+                            <form method="POST" action="/dashboard/records" class="record-approval-form m-0 d-flex gap-2 align-items-center">
+                                <input type="hidden" name="competenceId" value="{{ competence['id'] }}">
+                                <input type="hidden" class="final-approval-date-hidden" name="final_approval_date" value="">
+                                <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                            </form>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -59,76 +82,34 @@
     </div>
 </div>
 
-<form id="approvalForm" method="POST" action="/dashboard/records" class="d-none">
-    <input type="hidden" id="competenceIdInput" name="competenceId">
-    <input type="hidden" id="statusInput" name="status">
-    <input type="hidden" id="finalApprovalDateInput" name="final_approval_date">
-</form>
-
-<div class="modal fade" id="approvalModal" tabindex="-1" aria-labelledby="approvalModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="approvalModalLabel">Confirm ED approval</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p class="mb-3">Enter ED's approval date and confirm to update status.</p>
-                <div class="mb-3">
-                    <label for="modalfinal_approval_date" class="form-label">ED's approval date</label>
-                    <input id="modalfinal_approval_date" class="form-control" name="final_approval_date" type="date">
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="modalApproveCheckbox">
-                    <label class="form-check-label" for="modalApproveCheckbox">Update competence status</label>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="submitApproval()">Submit</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-function handleRowClick(row) {
-    const badge = row.querySelector(".badge");
-    const status = badge ? badge.textContent.trim() : "";
-    if (status === "Submitted for ED's approval") {
-        document.getElementById("competenceIdInput").value = row.getAttribute("data-id");
-        new bootstrap.Modal(document.getElementById("approvalModal")).show();
-    }
-}
-function closeModal() {
-    bootstrap.Modal.getInstance(document.getElementById("approvalModal")).hide();
-}
-function submitApproval() {
-    var checkbox = document.getElementById("modalApproveCheckbox");
-    var dateInput = document.getElementById("modalfinal_approval_date");
-    var finalApprovalDate = dateInput.value;
-    if (!checkbox.checked) {
-        alert("Please check the box before submitting.");
-        return;
-    }
-    if (!finalApprovalDate) {
-        alert("Please enter the final approval date.");
-        return;
-    }
-    document.getElementById("statusInput").value = "UP-TO-DATE";
-    document.getElementById("finalApprovalDateInput").value = finalApprovalDate;
-    bootstrap.Modal.getInstance(document.getElementById("approvalModal")).hide();
-    document.getElementById("approvalForm").submit();
-}
-function filterTable() {
-    var filter = document.getElementById("statusFilter").value.toLowerCase();
-    document.querySelectorAll("#competenceTable tr").forEach(function(row) {
-        var badge = row.querySelector(".badge");
-        var status = badge ? badge.textContent.trim().toLowerCase() : "";
-        row.style.display = filter === "" || status.includes(filter) ? "" : "none";
-    });
-}
 document.addEventListener("DOMContentLoaded", function() {
+    // Keep the hidden input in the row-form in sync with the visible date field.
+    document.querySelectorAll("tr.competence-row").forEach(function(row) {
+        const dateInput = row.querySelector("input.final-approval-date");
+        const hidden = row.querySelector("input.final-approval-date-hidden");
+        const form = row.querySelector("form.record-approval-form");
+
+        if (dateInput && hidden) {
+            dateInput.addEventListener("change", function() {
+                hidden.value = dateInput.value || "";
+            });
+
+            // Basic guard to ensure a date is provided before submit
+            if (form) {
+                form.addEventListener("submit", function(e) {
+                    hidden.value = dateInput.value || "";
+                    if (!hidden.value) {
+                        e.preventDefault();
+                        alert("Please enter the final approval date before approving.");
+                        dateInput.focus();
+                    }
+                });
+            }
+        }
+    });
+
+    // Due date highlighting
     var today = new Date();
     document.querySelectorAll(".due-date-column").forEach(function(cell) {
         var text = cell.textContent.trim();
@@ -139,5 +120,14 @@ document.addEventListener("DOMContentLoaded", function() {
         else if ((due - today) / (1000 * 60 * 60 * 24) <= 60) cell.classList.add("due-soon", "text-warning");
     });
 });
+
+function filterTable() {
+    var filter = document.getElementById("statusFilter").value.toLowerCase();
+    document.querySelectorAll("#competenceTable tr").forEach(function(row) {
+        var badge = row.querySelector(".badge");
+        var status = badge ? badge.textContent.trim().toLowerCase() : "";
+        row.style.display = filter === "" || status.includes(filter) ? "" : "none";
+    });
+}
 </script>
 {% endblock %}
