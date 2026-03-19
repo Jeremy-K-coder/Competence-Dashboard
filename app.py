@@ -119,19 +119,19 @@ def index():
     # Keep backend monitoring
     update_overdue_statuses()
 
-    role = session.get("role")
-    if not role:
+    Role = session.get("Role")
+    if not Role:
         rows = db.execute("SELECT Role FROM users WHERE id = ?", user_id)
         if not rows:
             return apology("User not found", 400)
-        role = rows[0].get("Role")
-        session["role"] = role
+        Role = rows[0].get("Role")
+        session["Role"] = Role
 
-    if role == ROLE_TECH:
+    if Role == ROLE_TECH:
         return redirect("/dashboard/tech")
-    if role == ROLE_RECORDS:
+    if Role == ROLE_RECORDS:
         return redirect("/dashboard/records")
-    if role == ROLE_DIRECTOR:
+    if Role == ROLE_DIRECTOR:
         return redirect("/dashboard/director")
     return redirect("/dashboard/other")
 
@@ -141,11 +141,25 @@ def index():
 def dashboard_tech():
     """Dashboard for Lab Technologists: show own competences."""
     user_id = session["user_id"]
+    
+    # Adding SQL queries to get statistics (Individual statistics)
+    stats_rows = db.execute("""
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN status IN ('UP-TO-DATE', 'Up-to-Date') THEN 1 ELSE 0 END) as compliant,
+            SUM(CASE WHEN status IN ('ALMOST DUE', 'Almost Due') THEN 1 ELSE 0 END) as warning,
+            SUM(CASE WHEN status = 'OVERDUE' THEN 1 ELSE 0 END) as urgent
+        FROM competences 
+        WHERE user_id = ?
+    """, user_id)
+    
+    stats = stats_rows[0] if stats_rows and stats_rows[0]['total'] > 0 else {"total": 0, "compliant": 0, "warning": 0, "urgent": 0}
+    
     competences_tech = db.execute(
         "SELECT competences.id AS id, competence, done_date, final_approval_date, due_date, status FROM competences WHERE user_id = ?",
         user_id,
     )
-    return render_template("indexTech.html", competencesTech=competences_tech)
+    return render_template("indexTech.html", competencesTech=competences_tech, stats=stats)
 
 
 @app.route("/dashboard/records", methods=["GET", "POST"])
@@ -186,12 +200,23 @@ def dashboard_records():
         )
 
         return redirect("/dashboard/records")
+    
+    # Adding SQL queries to get statistics (Global statistics)
+    stats_rows = db.execute("""
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN status IN ('UP-TO-DATE', 'Up-to-Date') THEN 1 ELSE 0 END) as compliant,
+            SUM(CASE WHEN status IN ('ALMOST DUE', 'Almost Due') THEN 1 ELSE 0 END) as warning,
+            SUM(CASE WHEN status = 'OVERDUE' THEN 1 ELSE 0 END) as urgent
+        FROM competences
+    """)
+    stats = stats_rows[0] if stats_rows and stats_rows[0]['total'] > 0 else {"total": 0, "compliant": 0, "warning": 0, "urgent": 0}
 
     competences_records = db.execute(
         "SELECT competences.id, username AS name, users.Department AS department, competence, done_date, final_approval_date, due_date, status "
         "FROM competences INNER JOIN users ON user_id = users.id"
     )
-    return render_template("indexRecords.html", competencesRecords=competences_records)
+    return render_template("indexRecords.html", competencesRecords=competences_records, stats=stats)
 
 
 @app.route("/dashboard/director", methods=["GET", "POST"])
@@ -224,23 +249,44 @@ def dashboard_director():
             )
 
         return redirect("/dashboard/director")
+    
+    # Adding SQL queries to get statistics (Global statistics)
+    stats_rows = db.execute("""
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN status IN ('UP-TO-DATE', 'Up-to-Date') THEN 1 ELSE 0 END) as compliant,
+            SUM(CASE WHEN status IN ('ALMOST DUE', 'Almost Due') THEN 1 ELSE 0 END) as warning,
+            SUM(CASE WHEN status = 'OVERDUE' THEN 1 ELSE 0 END) as urgent
+        FROM competences
+    """)
+    stats = stats_rows[0] if stats_rows and stats_rows[0]['total'] > 0 else {"total": 0, "compliant": 0, "warning": 0, "urgent": 0}
 
     competences_director = db.execute(
         "SELECT competences.id, username AS name, users.Department AS department, competence, done_date, final_approval_date, due_date, status "
         "FROM competences INNER JOIN users ON user_id = users.id"
     )
-    return render_template("indexDLS.html", competencesRecords=competences_director)
+    return render_template("indexDLS.html", competencesRecords=competences_director, stats=stats)
 
 
 @app.route("/dashboard/other", methods=["GET"])
 @login_required
 def dashboard_other():
     """Fallback dashboard for any other roles."""
+    # Adding SQL queries to get statistics (Global statistics)
+    stats_rows = db.execute("""
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN status IN ('UP-TO-DATE', 'Up-to-Date') THEN 1 ELSE 0 END) as compliant,
+            SUM(CASE WHEN status IN ('ALMOST DUE', 'Almost Due') THEN 1 ELSE 0 END) as warning,
+            SUM(CASE WHEN status = 'OVERDUE' THEN 1 ELSE 0 END) as urgent
+        FROM competences
+    """)
+    stats = stats_rows[0] if stats_rows and stats_rows[0]['total'] > 0 else {"total": 0, "compliant": 0, "warning": 0, "urgent": 0}
     competences_other = db.execute(
         "SELECT competences.id, username AS name, users.Department AS department, competence, done_date, final_approval_date, due_date, status "
         "FROM competences INNER JOIN users ON user_id = users.id"
     )
-    return render_template("indexOther.html", competencesRecords=competences_other)
+    return render_template("indexOther.html", competencesRecords=competences_other, stats=stats)
 
 
 @app.route("/login", methods=["GET", "POST"])
