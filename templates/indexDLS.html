@@ -4,9 +4,30 @@
 
 {% block main %}
 <div class="container-fluid">
-    <h2 class="competence-list-heading">OVERALL LAB COMPETENCE STATUS SUMMARY</h2>
 
-    <!--- Take the stats dictionary from backend and map it to Bootstrap's grid system. --->
+    <!--- Fancy Modern Header --->
+    <div class="container-fluid px-0 mb-4">
+        <div class="p-5 bg-white rounded-4 shadow-sm border-start border-5 border-primary">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h1 class="display-5 fw-black mb-2" style="letter-spacing: -1.5px; color: #0f172a;">
+                        OVERALL LAB COMPETENCE SUMMARY
+                    </h1>
+                    <div class="d-flex align-items-center gap-3">
+                        <p class="text-secondary fw-bold mb-0">
+                            <i class="bi bi-clock-history me-1"></i> 
+                            <span class="text-dark">{{ actual_timestamp }}</span>
+                        </p>  
+                    </div>
+                </div>
+                <div class="d-none d-xl-block">
+                    <i class="bi bi-activity text-primary opacity-25" style="font-size: 5rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--- Take the stats dictionary from backend and map it to Bootstrap's grid system for the cards. --->
     <div class="row g-2 mb-4">
         <div class="col-md">
             <div class="card bg-dark text-white h-100 shadow-sm border-0">
@@ -51,65 +72,103 @@
     </div>
 
     <!--- Display the overall lab health in a donut chart. --->
-    <div class="row g-3 mb-4">
+    <div class="row g-4 mb-4">
     
-        <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 dashboard-card-height">
+                <div class="card-body d-flex flex-column align-items-center">
+                    <h5 class="fw-bold mb-3">Overall Lab Competence Health</h5>
+                    
+                    <div style="position: relative; height: 250px; width: 100%;">
+                        <canvas id="healthChart"></canvas>
+                    </div>
     
-            <div class="col-lg-4">
-                <div class="card h-100 shadow-sm border-0">
-                    <div class="card-body d-flex flex-column align-items-center justify-content-center">
-                        <h6 class="fw-bold mb-3 text-muted">Overall Lab Competence Health</h6>
-                        <div style="position: relative; height:200px; width:200px">
-                            <canvas id="healthChart"></canvas>
-                        </div>
-                        <div id="chart-legend" class="mt-3 w-100">
-                            <div class="d-flex flex-column gap-2 mx-auto" style="max-width: 220px;">
-                                </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-        
-            <div class="col-lg-8">
-                <div class="card h-100 shadow-sm border-0">
-                    <div class="card-header bg-white border-0 pt-3 fw-bold">
-                        Departmental Competence Status Breakdown
-                    </div>
-                    <div class="card-body">
-                        {% for dept in dept_stats %}
-                            {% set comp_per = (dept.compliant / dept.total * 100) %}
-                            {% set prog_per = (dept.in_progress / dept.total * 100) %}
-                            {% set warn_per = (dept.almost_due / dept.total * 100) %}
-                            {% set crit_per = (dept.overdue / dept.total * 100) %}
-
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between small mb-1">
-                                    <span class="fw-bold text-secondary">{{ dept.Department }}</span>
-                                    <span class="small">{{ (comp_per + warn_per)|round(0) }}% Competent</span>
-                                </div>
-                                <div class="progress" style="height: 12px; border-radius: 6px;">
-                                    <div class="progress-bar bg-success" style="width: {{ comp_per }}%"></div>
-                                    <div class="progress-bar bg-info" style="width: {{ prog_per }}%"></div>
-                                    <div class="progress-bar bg-warning" style="width: {{ warn_per }}%"></div>
-                                    <div class="progress-bar bg-danger" style="width: {{ crit_per }}%"></div>
-                                </div>
+                    <div id="chart-legend" class="mt-3 w-100">
+                        <div class="d-flex flex-column gap-2 mx-auto" style="max-width: 220px;">
                             </div>
-                        {% endfor %}
                     </div>
                 </div>
             </div>
         </div>
-    </div>  
+        
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 dashboard-card-height">
+                <div class="card-header bg-white border-0 pt-3">
+                    <span class="fw-bold">Departmental Competence Status Breakdown</span>
+                </div>
+            
+                <div class="card-body">
+                    {% for dept in dept_stats %}
+                        {% set comp_per = (dept.compliant / dept.total * 100) %}
+                        {% set prog_per = (dept.in_progress / dept.total * 100) %}
+                        {% set warn_per = (dept.almost_due / dept.total * 100) %}
+                        {% set crit_per = (dept.overdue / dept.total * 100) %}
+            
+                        <div class="mb-4 me-2"> 
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="fw-bold text-secondary">{{ dept.Department }}</span>
+                                <span class="small fw-bold">{{ (comp_per + warn_per)|round(0) }}% Competent</span>
+                            </div>
+                            
+                            <div class="progress shadow-sm" style="height: 12px; border-radius: 6px;">
+                                <div class="progress-bar bg-success" style="width: {{ comp_per }}%"></div>
+                                <div class="progress-bar bg-info" style="width: {{ prog_per }}%"></div>
+                                <div class="progress-bar bg-warning" style="width: {{ warn_per }}%"></div>
+                                <div class="progress-bar bg-danger" style="width: {{ crit_per }}%"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    
+    </div>
+        
 
-    <!--- Searchbar for filtering the competence list. --->
-    <div class="mb-3">
-        <div class="input-group shadow-sm">
-            <span class="input-group-text bg-white border-end-0">
-                🔍
-            </span>
-            <input type="text" id="dashboardSearch" class="form-control border-start-0 ps-0" 
-                   placeholder="Type to filter by Tech, Department, or Competence...">
+    <!--- Display the overall lab competence health in a heatmap. --->
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+            <span class="fw-bold"><i class="bi bi-journal-check"></i> Individual Competence Health</span>
+            <span class="badge bg-light text-dark border">Scroll to see more</span>
+        </div>
+        
+        <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+            {% for item in comp_performance %}
+                {% set comp_per = (item.compliant / item.total * 100) %}
+                {% set prog_per = (item.in_progress / item.total * 100) %}
+                {% set warn_per = (item.almost_due / item.total * 100) %}
+                {% set crit_per = (item.overdue / item.total * 100) %}
+    
+                <div class="mb-3 me-2"> <div class="d-flex justify-content-between small mb-1">
+                        <span class="text-truncate" style="max-width: 70%;" title="{{ item.competence }}">
+                            {{ item.competence }}
+                        </span>
+                        <span class="fw-bold">{{ item.total }} Staff</span>
+                    </div>
+                    
+                    <div class="progress" style="height: 10px; border-radius: 5px;">
+                        <div class="progress-bar bg-success" style="width: {{ comp_per }}%" title="Ready"></div>
+                        <div class="progress-bar bg-info" style="width: {{ prog_per }}%" title="In Progress"></div>
+                        <div class="progress-bar bg-warning" style="width: {{ warn_per }}%"></div>
+                        <div class="progress-bar bg-danger" style="width: {{ crit_per }}%"></div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!--- Fancy Modern Competence List Header --->
+    <div class="container-fluid px-4 mb-3">
+        <div class="py-3 bg-white rounded-pill shadow-sm border border-light w-100">
+            <div class="d-flex align-items-center justify-content-center gap-3">
+                <i class="bi bi-journal-check text-primary h5 mb-0"></i>
+                
+                <h2 class="fw-black mb-0 text-uppercase" style="color: #0f172a; font-size: 2.0rem; letter-spacing: -0.5px;">
+                    Competence List
+                </h2>
+    
+                <i class="bi bi-journal-check text-primary h5 mb-0" style="transform: scaleX(-1);"></i>
+            </div>
         </div>
     </div>
 
@@ -126,6 +185,18 @@
             <option value="Returned for amendment">Returned for amendment</option>
         </select>
     </div>
+
+    <!--- Searchbar for filtering the competence list. --->
+    <div class="mb-3">
+        <div class="input-group shadow-sm">
+            <span class="input-group-text bg-white border-end-0">
+                🔍
+            </span>
+            <input type="text" id="dashboardSearch" class="form-control border-start-0 ps-0" 
+                   placeholder="Type to filter by Tech, Department, or Competence...">
+        </div>
+    </div>
+
     
     <script>
         /* LIVE FILTER LOGIC:
@@ -206,7 +277,6 @@
         });
     </script>
 
-    <h2 class="competence-list-heading">Competence List</h2>
     <!--- Display the competence list in a table. --->
     <div class="table-responsive">
         <table class="table table-striped table-hover align-middle">

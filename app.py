@@ -275,12 +275,29 @@ def dashboard_director():
         INNER JOIN users ON competences.user_id = users.id
         GROUP BY users.Department
     """)
+    
+    # Query to find performance per Competence (Top 100 or all)
+    comp_performance = db.execute("""
+        SELECT 
+            competence,
+            COUNT(*) as total,
+            SUM(CASE WHEN status IN ('UP-TO-DATE', 'Up-to-Date') THEN 1 ELSE 0 END) as compliant,
+            SUM(CASE WHEN status LIKE 'Submitted%' OR status LIKE 'Returned%' THEN 1 ELSE 0 END) as in_progress,
+            SUM(CASE WHEN status IN ('ALMOST DUE', 'Almost Due') THEN 1 ELSE 0 END) as almost_due,
+            SUM(CASE WHEN status = 'OVERDUE' THEN 1 ELSE 0 END) as overdue
+        FROM competences 
+        GROUP BY competence
+        ORDER BY overdue DESC, total DESC
+    """)
 
     competences_director = db.execute(
         "SELECT competences.id, username AS name, users.Department AS department, competence, done_date, final_approval_date, due_date, status "
         "FROM competences INNER JOIN users ON user_id = users.id"
     )
-    return render_template("indexDLS.html", competencesRecords=competences_director, stats=stats, dept_stats=dept_stats)
+    
+    now = datetime.now()
+    actual_timestamp = now.strftime("%d %B %Y | %H:%M") # e.g., 20 March 2026 | 09:58
+    return render_template("indexDLS.html", competencesRecords=competences_director, stats=stats, dept_stats=dept_stats, comp_performance=comp_performance, actual_timestamp=actual_timestamp)
 
 
 @app.route("/dashboard/other", methods=["GET"])

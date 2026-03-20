@@ -106,3 +106,54 @@ nav .navbar-brand {
 .filter-container {
     text-align: center;
 }
+
+
+/* Custom Scrollbar for the Competence Health Visual */
+div.card-body::-webkit-scrollbar {
+    width: 6px;
+}
+div.card-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+div.card-body::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+div.card-body::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Custom weight for that high-end dashboard Heading look */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+.fw-black {
+    font-weight: 800 !important;
+    font-family: 'Inter', 'Segoe UI', sans-serif !important;
+}
+
+/* This ensures all headings use the modern Inter font */
+h1, h2, h3, h4, h5 {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Adds a subtle 'glass' effect to the centered pill */
+.rounded-pill.bg-white {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0,0,0,0.05) !important;
+}
+
+
+/*For the overall lab and departmental competence visuals to be aligned*/
+.dashboard-card-height {
+    height: 450px; /* Adjust this value until it looks perfect on your screen */
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-card-height .card-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
