@@ -199,27 +199,42 @@
 
     
     <script>
-        /* LIVE FILTER LOGIC:
-           This triggers every time a user releases a key ('keyup') in the search box.
-        */
-        document.getElementById('dashboardSearch').addEventListener('keyup', function() {
-            // Convert input to lowercase so searching is not case-sensitive
-            let searchValue = this.value.toLowerCase();
+        function filterTable() {
+            // 1. Get current values from both filters
+            const searchValue = document.getElementById('dashboardSearch').value.toLowerCase();
+            const statusValue = document.getElementById('statusFilter').value.toUpperCase();
             
-            // Target all table rows (tr) inside the table body (tbody)
-            let tableRows = document.querySelectorAll("table tbody tr");
+            // 2. Target all table rows
+            const tableRows = document.querySelectorAll("table tbody tr");
     
             tableRows.forEach(row => {
-                // Get all text within this specific row (name, dept, competence, etc.)
-                let rowText = row.innerText.toLowerCase();
+                // Get all text in the row for the search box logic
+                const rowText = row.innerText.toLowerCase();
                 
-                /* The Logic:
-                   If the row contains the search text, display it ("").
-                   If not, hide it from view ("none").
+                // Get the status specifically from the row (usually looks for the text inside the badge)
+                // If your status isn't in a badge, use row.cells[X].innerText where X is the column index
+                const rowStatus = row.innerText.toUpperCase();
+    
+                // 3. Check Criteria A: Does it match the Search Text?
+                const matchesSearch = rowText.includes(searchValue);
+    
+                // 4. Check Criteria B: Does it match the Status Dropdown?
+                // (If dropdown is empty/All, it's always a match)
+                const matchesStatus = (statusValue === "" || rowStatus.includes(statusValue));
+    
+                /* THE PERSISTENT LOGIC:
+                   The row is only displayed if BOTH conditions are true.
                 */
-                row.style.display = rowText.includes(searchValue) ? "" : "none";
+                if (matchesSearch && matchesStatus) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
             });
-        });
+        }
+    
+        // Attach the event listener to the search bar as well
+        document.getElementById('dashboardSearch').addEventListener('keyup', filterTable);
     </script>
 
     <script>
