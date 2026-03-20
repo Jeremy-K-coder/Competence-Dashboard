@@ -19,6 +19,46 @@
         </select>
     </div>
 
+
+        <!--- Take the stats dictionary from backend and map it to Bootstrap's grid system. --->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-lg-3">
+                <div class="card bg-primary text-white h-100 shadow-sm border-0">
+                    <div class="card-body text-center p-3">
+                        <div class="small opacity-75">Total Competences</div>
+                        <div class="display-6 fw-bold">{{ stats.total }}</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="col-6 col-lg-3">
+                <div class="card bg-success text-white h-100 shadow-sm border-0">
+                    <div class="card-body text-center p-3">
+                        <div class="small opacity-75">Up-to-Date</div>
+                        <div class="display-6 fw-bold">{{ stats.compliant }}</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="col-6 col-lg-3">
+                <div class="card bg-warning text-dark h-100 shadow-sm border-0">
+                    <div class="card-body text-center p-3">
+                        <div class="small opacity-75">Almost Due</div>
+                        <div class="display-6 fw-bold">{{ stats.warning }}</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="col-6 col-lg-3">
+                <div class="card bg-danger text-white h-100 shadow-sm border-0">
+                    <div class="card-body text-center p-3">
+                        <div class="small opacity-75">Overdue</div>
+                        <div class="display-6 fw-bold">{{ stats.urgent }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
     <div class="table-responsive">
         <table class="table table-hover table-striped align-middle">
             <thead class="table-light">

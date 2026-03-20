@@ -97,3 +97,12 @@ nav .navbar-brand {
 .clickable-row:hover {
     background-color: rgba(13, 110, 253, 0.05);
 }
+
+.form-select {
+    text-align: center;
+    text-align-last: center;
+}
+
+.filter-container {
+    text-align: center;
+}

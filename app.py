@@ -166,7 +166,7 @@ def dashboard_tech():
 @login_required
 def dashboard_records():
     """Dashboard for Records Officers."""
-    if session.get("role") != ROLE_RECORDS:
+    if session.get("Role") != ROLE_RECORDS:
         return redirect("/")
 
     if request.method == "POST":
@@ -223,7 +223,7 @@ def dashboard_records():
 @login_required
 def dashboard_director():
     """Dashboard for Lab Director."""
-    if session.get("role") != ROLE_DIRECTOR:
+    if session.get("Role") != ROLE_DIRECTOR:
         return redirect("/")
 
     if request.method == "POST":
@@ -255,17 +255,32 @@ def dashboard_director():
         SELECT 
             COUNT(*) as total,
             SUM(CASE WHEN status IN ('UP-TO-DATE', 'Up-to-Date') THEN 1 ELSE 0 END) as compliant,
+            SUM(CASE WHEN status LIKE 'Submitted%' OR status LIKE 'Returned%' THEN 1 ELSE 0 END) as in_progress,
             SUM(CASE WHEN status IN ('ALMOST DUE', 'Almost Due') THEN 1 ELSE 0 END) as warning,
             SUM(CASE WHEN status = 'OVERDUE' THEN 1 ELSE 0 END) as urgent
         FROM competences
     """)
     stats = stats_rows[0] if stats_rows and stats_rows[0]['total'] > 0 else {"total": 0, "compliant": 0, "warning": 0, "urgent": 0}
 
+    # Fetch performance stats grouped by Department
+    dept_stats = db.execute("""
+        SELECT 
+            users.Department,
+            COUNT(*) as total,
+            SUM(CASE WHEN status IN ('UP-TO-DATE', 'Up-to-Date') THEN 1 ELSE 0 END) as compliant,
+            SUM(CASE WHEN status LIKE 'Submitted%' OR status LIKE 'Returned%' THEN 1 ELSE 0 END) as in_progress,
+            SUM(CASE WHEN status IN ('ALMOST DUE', 'Almost Due') THEN 1 ELSE 0 END) as almost_due,
+            SUM(CASE WHEN status = 'OVERDUE' THEN 1 ELSE 0 END) as overdue
+        FROM competences 
+        INNER JOIN users ON competences.user_id = users.id
+        GROUP BY users.Department
+    """)
+
     competences_director = db.execute(
         "SELECT competences.id, username AS name, users.Department AS department, competence, done_date, final_approval_date, due_date, status "
         "FROM competences INNER JOIN users ON user_id = users.id"
     )
-    return render_template("indexDLS.html", competencesRecords=competences_director, stats=stats)
+    return render_template("indexDLS.html", competencesRecords=competences_director, stats=stats, dept_stats=dept_stats)
 
 
 @app.route("/dashboard/other", methods=["GET"])
