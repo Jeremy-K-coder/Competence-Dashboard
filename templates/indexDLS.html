@@ -10,13 +10,13 @@
         <div class="p-5 bg-white rounded-4 shadow-sm border-start border-5 border-primary">
             <div class="d-flex align-items-center justify-content-between">
                 <div>
-                    <h1 class="display-5 fw-black mb-2" style="letter-spacing: -1.5px; color: #0f172a;">
-                        OVERALL LAB COMPETENCE SUMMARY
-                    </h1>
+                    <h2 class="display-5 fw-black mb-2" style="letter-spacing: -1.5px; color: #0f172a;">
+                        JCRC LAB COMPETENCE STATUS SUMMARY
+                    </h2>
                     <div class="d-flex align-items-center gap-3">
                         <p class="text-secondary fw-bold mb-0">
                             <i class="bi bi-clock-history me-1"></i> 
-                            <span class="text-dark">{{ actual_timestamp }}</span>
+                            <span class="text-dark">{{ actual_timestamp }} hrs</span>
                         </p>  
                     </div>
                 </div>
@@ -71,6 +71,13 @@
         </div>
     </div>
 
+    <!--- Reset All visual filters button --->
+    <div class="d-flex justify-content-end mb-3 px-3">
+        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill shadow-sm" onclick="resetAllFilters()">
+            <i class="bi bi-arrow-clockwise me-1"></i> Reset Dashboard Filters
+        </button>
+    </div>
+
     <!--- Display the overall lab health in a donut chart. --->
     <div class="row g-4 mb-4">
     
@@ -94,7 +101,15 @@
         <div class="col-lg-8">
             <div class="card shadow-sm border-0 dashboard-card-height">
                 <div class="card-header bg-white border-0 pt-3">
-                    <span class="fw-bold">Departmental Competence Status Breakdown</span>
+                    <span class="fw-bold">Departmental Competence Health</span>
+                </div>
+                <div class="px-3 mb-2">
+                    <select class="form-select select2-enable" id="deptSelectFilter" style="width: 100%;">
+                        <option value="all">All Departments</option>
+                        {% for d in depts_list %}
+                            <option value="{{ d.Department | lower }}">{{ d.Department }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
             
                 <div class="card-body">
@@ -104,7 +119,7 @@
                         {% set warn_per = (dept.almost_due / dept.total * 100) %}
                         {% set crit_per = (dept.overdue / dept.total * 100) %}
             
-                        <div class="mb-4 me-2"> 
+                        <div class="mb-4 me-2 dept-item" data-name="{{ dept.Department | lower }}"> 
                             <div class="d-flex justify-content-between small mb-1">
                                 <span class="fw-bold text-secondary">{{ dept.Department }}</span>
                                 <span class="small fw-bold">{{ (comp_per + warn_per)|round(0) }}% Competent</span>
@@ -121,15 +136,28 @@
                 </div>
             </div>
         </div>
-    
     </div>
-        
+
+    <!--- Reset All visual filters button --->
+    <div class="d-flex justify-content-end mb-3 px-3">
+        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill shadow-sm" onclick="resetAllFilters()">
+            <i class="bi bi-arrow-clockwise me-1"></i> Reset Dashboard Filters
+        </button>
+    </div>
 
     <!--- Display the overall lab competence health in a heatmap. --->
     <div class="card mb-4 shadow-sm border-0">
         <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
             <span class="fw-bold"><i class="bi bi-journal-check"></i> Individual Competence Health</span>
-            <span class="badge bg-light text-dark border">Scroll to see more</span>
+            <span class="badge bg-light text-dark border">By each competence</span>
+        </div>
+        <div class="input-group input-group-sm mb-2">
+            <select class="form-select select2-enable" id="indivSelectFilter" onchange="filterIndividual()" style="width: 100%;">
+                <option value="all">All Competencies</option>
+                {% for c in comps_list %}
+                    <option value="{{ c.competence | lower | trim }}">{{ c.competence }}</option>
+                {% endfor %}
+            </select>
         </div>
         
         <div class="card-body" style="max-height: 400px; overflow-y: auto;">
@@ -139,7 +167,8 @@
                 {% set warn_per = (item.almost_due / item.total * 100) %}
                 {% set crit_per = (item.overdue / item.total * 100) %}
     
-                <div class="mb-3 me-2"> <div class="d-flex justify-content-between small mb-1">
+                <div class="mb-3 me-2 indiv-item" data-name="{{ item.competence | lower | trim }}">
+                    <div class="d-flex justify-content-between small mb-1">
                         <span class="text-truncate" style="max-width: 70%;" title="{{ item.competence }}">
                             {{ item.competence }}
                         </span>
@@ -157,17 +186,72 @@
         </div>
     </div>
 
+    <!--- Reset All visual filters button --->
+    <div class="d-flex justify-content-end mb-3 px-3">
+        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill shadow-sm" onclick="resetAllFilters()">
+            <i class="bi bi-arrow-clockwise me-1"></i> Reset Dashboard Filters
+        </button>
+    </div>
+
+    <!--- Tech Competence Health visual --->
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+            <span class="fw-bold"><i class="bi bi-people"></i> Tech Competence Health</span>
+            <span class="badge bg-light text-dark border">By Individual Staff</span>
+        </div>
+        <div class="input-group input-group-sm mb-2">
+            <select class="form-select select2-enable" id="techSelectFilter" onchange="filterTech()" style="width: 100%;">
+                <option value="all">All Techs</option>
+                {% for t in techs_list %}
+                    <option value="{{ t.username | lower | trim }}">{{ t.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+            {% for tech in tech_performance %}
+                {% set comp_per = (tech.compliant / tech.total * 100) if tech.total > 0 else 0 %}
+                {% set prog_per = (tech.in_progress / tech.total * 100) if tech.total > 0 else 0 %}
+                {% set warn_per = (tech.almost_due / tech.total * 100) if tech.total > 0 else 0 %}
+                {% set crit_per = (tech.overdue / tech.total * 100) if tech.total > 0 else 0 %}
+    
+                <div class="mb-3 me-2 tech-item" data-name="{{ tech.tech_name | lower | trim }}">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span class="fw-bold text-secondary">{{ tech.tech_name }}</span>
+                        <span class="small text-muted">{{ (comp_per + warn_per)|round(0) }}% Competent ({{ (tech.compliant + tech.almost_due) }}/{{tech.total }})</span>
+                    </div>
+                    
+                    <div class="progress shadow-sm" style="height: 12px; border-radius: 6px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ comp_per }}%" title="Up-to-date"></div>
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ prog_per }}%" title="In Progress"></div>
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ warn_per }}%" title="Almost Due"></div>
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: {{ crit_per }}%" title="Overdue"></div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+
     <!--- Fancy Modern Competence List Header --->
     <div class="container-fluid px-4 mb-3">
         <div class="py-3 bg-white rounded-pill shadow-sm border border-light w-100">
-            <div class="d-flex align-items-center justify-content-center gap-3">
-                <i class="bi bi-journal-check text-primary h5 mb-0"></i>
+            <div class="d-flex flex-column align-items-center justify-content-center">
                 
-                <h2 class="fw-black mb-0 text-uppercase" style="color: #0f172a; font-size: 2.0rem; letter-spacing: -0.5px;">
-                    Competence List
-                </h2>
+                <div class="d-flex align-items-center gap-3">
+                    <i class="bi bi-journal-check text-primary h5 mb-0"></i>
+                    
+                    <h2 class="fw-black mb-0 text-uppercase" style="color: #0f172a; font-size: 2.0rem; letter-spacing: -0.5px;">
+                        Competence Status Details
+                    </h2>    
+                    
+                    <i class="bi bi-journal-check text-primary h5 mb-0" style="transform: scaleX(-1);"></i>
+                </div>
     
-                <i class="bi bi-journal-check text-primary h5 mb-0" style="transform: scaleX(-1);"></i>
+                <span class="badge rounded-pill bg-light text-secondary border px-3 py-1 mt-2 shadow-sm" style="font-size: 0.7rem;">
+                    <i class="bi bi-clock me-1"></i> {{ actual_timestamp }} hrs
+                </span> 
+    
             </div>
         </div>
     </div>
@@ -232,9 +316,107 @@
                 }
             });
         }
+
+        $(document).ready(function() {
+            // Initialize Select2
+            $('.select2-enable').select2({
+                placeholder: "Select an option",
+                allowClear: true,
+                width: '100%'
+            });
+        
+            // LISTEN FOR CHANGES
+            // 'change.select2' is the specific event Select2 fires when a user clicks an option
+            $('#indivSelectFilter').on('change.select2', function() {
+                filterIndividual();
+            });
+        
+            $('#techSelectFilter').on('change.select2', function() {
+                filterTech();
+            });
+        
+            $('#deptSelectFilter').on('change.select2', function() {
+                filterDepartmental();
+            });
+        });
+        
+        /**
+         * CORE FILTER LOGIC FOR VISUALS
+         * This checks if the item's name matches the dropdown selection.
+         */
+        function filterDepartmental() {
+            let selectedDept = $('#deptSelectFilter').val(); // Get Select2 value
+            let items = document.querySelectorAll('.dept-item');
+        
+            items.forEach(item => {
+                let name = item.getAttribute('data-name');
+                // Show if "All" is selected OR if the names match exactly
+                item.style.display = (selectedDept === 'all' || !selectedDept || name === selectedDept.toLowerCase()) ? "" : "none";
+            });
+        }
+        
+        function filterIndividual() {
+            // Grab the value from the Select2-enabled dropdown
+            let selectedVal = $('#indivSelectFilter').val(); 
+            
+            // Target all competence health bars
+            let items = document.querySelectorAll('.indiv-item');
+        
+            items.forEach(item => {
+                let itemName = item.getAttribute('data-name');
+        
+                // LOGIC: Show if nothing is selected, if "all" is selected, or if it's an exact match
+                if (!selectedVal || selectedVal === 'all' || itemName === selectedVal) {
+                    item.style.display = ""; // Show
+                } else {
+                    item.style.display = "none"; // Hide
+                }
+            });
+        }
+        
+        function filterTech() {
+            let selectedTech = $('#techSelectFilter').val();
+            let items = document.querySelectorAll('.tech-item');
+        
+            items.forEach(item => {
+                let name = item.getAttribute('data-name');
+                item.style.display = (selectedTech === 'all' || !selectedTech || name === selectedTech.toLowerCase()) ? "" : "none";
+            });
+        }
     
         // Attach the event listener to the search bar as well
         document.getElementById('dashboardSearch').addEventListener('keyup', filterTable);
+
+        /**
+        * RESET ALL FILTERS
+        * Clears Select2 dropdowns, text inputs, and refreshes all visual lists.
+        */
+        function resetAllFilters() {
+            // 1. Reset Select2 Dropdowns to 'all'
+            // Note: .val('all') sets the value, .trigger('change') tells Select2 to update visually
+            $('#deptSelectFilter').val('all').trigger('change');
+            $('#indivSelectFilter').val('all').trigger('change');
+            $('#techSelectFilter').val('all').trigger('change');
+
+            // 2. Clear any standard text search inputs (if you kept them)
+            const searchInputs = ['deptSearch', 'indivSearch', 'techSearch', 'dashboardSearch'];
+            searchInputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+
+            // 3. Manually call the filter functions to show all hidden items
+            // This ensures the "display: none" is removed from all rows
+            filterDepartmental();
+            filterIndividual();
+            filterTech();
+            
+            // Also reset the main status table filter if it exists
+            if (typeof filterTable === "function") {
+                document.getElementById('statusFilter').value = '';
+                filterTable();
+            }
+        }
     </script>
 
     <script>

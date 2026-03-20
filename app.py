@@ -289,6 +289,32 @@ def dashboard_director():
         GROUP BY competence
         ORDER BY overdue DESC, total DESC
     """)
+    
+    # Query to find performance per Technician (Tech)
+    tech_performance = db.execute("""
+        SELECT 
+            users.username AS tech_name,
+            COUNT(*) as total,
+            SUM(CASE WHEN status IN ('UP-TO-DATE', 'Up-to-Date') THEN 1 ELSE 0 END) as compliant,
+            SUM(CASE WHEN status LIKE 'Submitted%' OR status LIKE 'Returned%' THEN 1 ELSE 0 END) as in_progress,
+            SUM(CASE WHEN status IN ('ALMOST DUE', 'Almost Due') THEN 1 ELSE 0 END) as almost_due,
+            SUM(CASE WHEN status = 'OVERDUE' THEN 1 ELSE 0 END) as overdue
+        FROM competences 
+        INNER JOIN users ON competences.user_id = users.id
+        GROUP BY users.username
+        ORDER BY overdue DESC, total DESC
+    """)
+    
+    # --- FETCH UNIQUE LISTS FOR DROPDOWNS ---
+
+    # 1. Get all unique Departments
+    depts_list = db.execute("SELECT DISTINCT Department FROM users ORDER BY Department")
+
+    # 2. Get all unique Competence names
+    comps_list = db.execute("SELECT DISTINCT competence FROM competences ORDER BY competence")
+
+    # 3. Get all unique Technicians (Techs)
+    techs_list = db.execute("SELECT username FROM users WHERE Role NOT IN ('Lab Director', 'QA/QC', 'Lab Manager', 'Records Officer') ORDER BY username")
 
     competences_director = db.execute(
         "SELECT competences.id, username AS name, users.Department AS department, competence, done_date, final_approval_date, due_date, status "
@@ -297,7 +323,15 @@ def dashboard_director():
     
     now = datetime.now()
     actual_timestamp = now.strftime("%d %B %Y | %H:%M") # e.g., 20 March 2026 | 09:58
-    return render_template("indexDLS.html", competencesRecords=competences_director, stats=stats, dept_stats=dept_stats, comp_performance=comp_performance, actual_timestamp=actual_timestamp)
+    return render_template("indexDLS.html",
+                           competencesRecords=competences_director,
+                           stats=stats, dept_stats=dept_stats,
+                           comp_performance=comp_performance,
+                           actual_timestamp=actual_timestamp,
+                           tech_performance=tech_performance,
+                           depts_list=depts_list,
+                           comps_list=comps_list,
+                           techs_list=techs_list)
 
 
 @app.route("/dashboard/other", methods=["GET"])

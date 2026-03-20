@@ -157,3 +157,15 @@ h1, h2, h3, h4, h5 {
     overflow-y: auto;
     overflow-x: hidden;
 }
+
+.btn-outline-secondary:hover {
+    background-color: #f8f9fa;
+    color: #0f172a;
+    border-color: #0f172a;
+}
+
+/* Make Reset All button look more stylish */
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
